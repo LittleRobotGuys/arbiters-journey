@@ -12,9 +12,9 @@ TagManager:
   - Water
   - UI
   - 
-  - 
-  - 
-  - 
+  - Characters
+  - Terrain
+  - Subterrain
   - 
   - 
   - 
@@ -40,4 +40,10 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Character
+    uniqueID: 931016215
+    locked: 0
+  - name: Terrain
+    uniqueID: 2695121041
     locked: 0
