@@ -39,8 +39,8 @@ public class CreatureAnimator : MonoBehaviour
             animationNumber = Int32.Parse(baseSprite.name.Substring(baseSpriteName.Length + 1));
             animationIndex = 0;
 
-            Debug.Log("Creature created with sprite: " + baseSpriteName);
-            Debug.Log("Creature sprite begins with index: " + animationIndex);
+            //Debug.Log("Creature created with sprite: " + baseSpriteName);
+            //Debug.Log("Creature sprite begins with index: " + animationIndex);
         }
 
         frontSprites = new Sprite[animationsPerCycle];
@@ -48,11 +48,11 @@ public class CreatureAnimator : MonoBehaviour
 
         atlas = Resources.LoadAll<Sprite>("AllAvatars/" + baseSpriteName);
 
-        Debug.Log("Created an atlas of length: " + atlas.Length);
+        //Debug.Log("Created an atlas of length: " + atlas.Length);
         
         for(int k = 0; k < atlas.Length; k++)
         {
-            Debug.Log("Sprite in atlas at index " + k + atlas[k].name);
+            //Debug.Log("Sprite in atlas at index " + k + atlas[k].name);
         }
 
         for (int i = 0; i < animationsPerCycle; i++)
@@ -78,6 +78,7 @@ public class CreatureAnimator : MonoBehaviour
 
     private IEnumerator StartAnimating(Vector3 direction, float t)
     {
+        Debug.Log("Starting animating: Direction (" + direction.x + ", " + direction.y + ")");
         animating = true;
         while (animating)
         {
@@ -89,7 +90,7 @@ public class CreatureAnimator : MonoBehaviour
             loadCorrectSpriteFrame(direction, animationIndex);
         
 
-            // flip it if needed
+            // flip X if needed
             if (direction.x < 0)
             {
                 GetComponentInChildren<SpriteRenderer>().flipX = true;

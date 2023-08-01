@@ -59,6 +59,10 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+# Logs
+*.log
+*.logs
+
 Library/
 Samples~/
 TextMesh\ Pro/
