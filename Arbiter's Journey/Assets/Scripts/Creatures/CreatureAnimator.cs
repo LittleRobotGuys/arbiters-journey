@@ -6,7 +6,6 @@ using System.Linq;
 
 public class CreatureAnimator : MonoBehaviour
 {
-
     [SerializeField]
     private int animationIndex = 0, animationNumber = 0, animationsPerCycle = 4;
     [SerializeField]
@@ -68,11 +67,11 @@ public class CreatureAnimator : MonoBehaviour
         GetComponentInChildren<SpriteRenderer>().sprite = frontSprites[0];
     }
 
-    public void Animate(Vector3 dir, float t)
+    public void Animate(Vector3 dir, float time)
     {
         if (!animating)
         {
-            StartCoroutine(StartAnimating(dir, t * animSpeed));
+            StartCoroutine(StartAnimating(dir, time * animSpeed));
         }
     }
 

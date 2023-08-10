@@ -71,7 +71,7 @@ public partial class @Movement : IInputActionCollection2, IDisposable
                     ""path"": ""<Mouse>/leftButton"",
                     ""interactions"": ""Press(behavior=1)"",
                     ""processors"": ""Normalize(max=1)"",
-                    ""groups"": """",
+                    ""groups"": ""Windoze"",
                     ""action"": ""Movement"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false

@@ -1,22 +1,29 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Tilemaps;
+using DebugUtils;
+using UnityEditor;
 
 public class GridManager : MonoBehaviour
 {
-    public Tilemap tilemap;
-    public Tilemap obstacleMap;
-    public Vector3Int[,] Locations;
-    Astar astar;
-    List<Location> roadPath = new List<Location>();
+    public SmartTileMap terrainMap;
+    public SmartTileMap obstacleMap;
     new Camera camera;
-    BoundsInt bounds;
     private Movement movementControls;
     [SerializeField]
     private List<Creature> creatureList;
+
+    public Vector2Int mouseTarget;
+
+    [SerializeField]
+    private Creature debugCreature;
+
+    [SerializeField]
+    private bool DrawingDebugPaths = true;
 
     private void Awake()
     {
@@ -34,76 +41,107 @@ public class GridManager : MonoBehaviour
     }
     void Start()
     {
-        tilemap.CompressBounds();
-        obstacleMap.CompressBounds();
-        bounds = tilemap.cellBounds;
+        if (terrainMap == null || obstacleMap == null)
+        {
+            Debug.LogError("Unable to initialize GridManager - Need to assign SmartTileMaps.  Did you break the prefab?");
+        }
         camera = Camera.main;
 
+        RemoveTerrainMapTilesDueToObstacles();
 
-        CreateMovementGrid();
-        astar = new Astar(Locations, bounds.size.x, bounds.size.y);
-
-        movementControls.MovementMap.Movement.performed += ctx => Move(ctx.ReadValue<float>());
+        movementControls.MovementMap.Movement.performed += _ => GetMouseTile();
     }
 
-    private void Move(float direction)
+    private void RemoveTerrainMapTilesDueToObstacles()
     {
+        List<string> obstacleKeyList = obstacleMap.GetAllTilesKeys();
+        foreach (string key in terrainMap.GetAllTilesKeys())
+        {
+            if (obstacleKeyList.Contains(key))
+            {
+                terrainMap.Remove(key);
+            }
+        }
+    }
+
+    private void GetMouseTile()
+    {
+        if (terrainMap == null) return;
+
         Vector2 mousePos = Mouse.current.position.ReadValue();
         Vector3 world = camera.ScreenToWorldPoint(mousePos);
-        Vector3Int gridPos = tilemap.WorldToCell(world);
-        target = new Vector2Int(gridPos.x, gridPos.y);
+        Vector3Int gridPos = terrainMap.WorldToCell(world);
 
-        foreach (Creature creature in creatureList)
+        foreach (Creature c in creatureList)
         {
-            creature.Move(target);
+            c.MouseClicked(terrainMap.GetTile(gridPos));
         }
 
-        Debug.Log("Grid Position: " + target.x + ", " + target.y);
+        if (DrawingDebugPaths)
+        {
+            DebugDraw.X(new Vector2Int(gridPos.x, gridPos.y));
+            DebugPath(debugCreature, gridPos);
+        }
     }
 
-    internal Tilemap GetCollisionTileMap()
+    private void DebugPath(Creature debugCreature, Vector3Int target)
+    {
+        if (debugCreature == null)
+        {
+            Debug.LogError("Creature is null");
+            return;
+        }
+        if (!terrainMap.ContainsTileAt(target))
+        {
+            Debug.LogError("Target is not in the terrainMap");
+        }
+        if (obstacleMap.ContainsTileAt(target))
+        {
+            Debug.LogError("Target is in the obstacleMap");
+            return;
+        }
+
+        Pathfinding p = debugCreature.GetPathfinding();
+
+        List<PathNode> debugPath = GetPath(debugCreature, p, target);
+
+        if (debugPath != null)
+        {
+            foreach (PathNode pathNode in debugPath)
+            {
+                DebugDraw.X(pathNode.GetLocation());
+            }
+        }
+
+        else
+        {
+            Debug.Log("No path found to " + target.ToString());
+        }
+    }
+
+    private List<PathNode> GetPath(Creature c, Pathfinding p, Vector3Int target)
+    {
+        List<PathNode> path = p.FindPath(c.GetTile(), terrainMap.GetTile(target));
+        if (path != null)
+            p.ClearPathNodes(path);
+
+        return path;
+    }
+
+    internal SmartTileMap GetCollisionTileMap()
     {
         return obstacleMap;
     }
 
-    internal Tilemap GetWalkableTileMap()
+    internal SmartTileMap GetWalkableTileMap()
     {
-        return tilemap;
+        return terrainMap;
     }
 
-    public void CreateMovementGrid()
+    internal void LazyAddCreature(Creature creature)
     {
-        Locations = new Vector3Int[bounds.size.x, bounds.size.y];
-        for (int x = bounds.xMin, i = 0; i < (bounds.size.x); x++, i++)
-        {
-            for (int y = bounds.yMin, j = 0; j < (bounds.size.y); y++, j++)
-            {
-                if (tilemap.HasTile(new Vector3Int(x, y, 0)))
-                {
-                    Locations[i, j] = new Vector3Int(x, y, 0);
-                }
-                else
-                {
-                    Locations[i, j] = new Vector3Int(x, y, 1);
-                }
-            }
-        }
+        if (this.creatureList.Contains(creature)) return;
+        
+        this.creatureList.Add(creature);
     }
- 
-    public Vector2Int target;
-    void Update()
-    {
-        Vector3 world = camera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
-        Vector3Int gridPos = tilemap.WorldToCell(world);
-
-        if (roadPath != null && roadPath.Count > 0)
-            roadPath.Clear();
-
-        roadPath = astar.CreatePath(Locations, target, new Vector2Int(gridPos.x, gridPos.y), 1000);
-        if (roadPath == null)
-            return;
-
-        target = new Vector2Int(roadPath[0].X, roadPath[0].Y);
-    }
-
 }

@@ -3,11 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using UnityEngine.WSA;
 
 public class Creature : MonoBehaviour
 {
-    [SerializeField]
-    private Vector2Int gridPosition;
     [SerializeField]
     private SpriteRenderer sprite;
     [SerializeField]
@@ -18,16 +17,17 @@ public class Creature : MonoBehaviour
     private CreatureAnimator animator = null;
 
     [SerializeField]
-    private bool DebuggingMovement = false;
+    private Pathfinding pathfinding;
+
+    private SmartTile creatureTile;
+    private List<PathNode> path;
+
     [SerializeField]
-    private Vector2Int DebugMoveTarget = new Vector2Int(5, 3);
-
-    private Tile creatureTile;
-
-    private Vector2Int targetPosition;
-    private float stopDistance = 0.4f;
-    private Tilemap groundTileMap;
-    private Tilemap collisionTileMap;
+    private SmartTileMap groundTileMap;
+    [SerializeField] 
+    private SmartTileMap collisionTileMap;
+    private bool isMoving = false;
+    private Vector3 IMPOSSIBLE_V3 = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
 
     private void Awake()
     {
@@ -49,104 +49,201 @@ public class Creature : MonoBehaviour
         {
             Debug.LogError("NO GRID MANAGER FOUND IN SCENE!");
         }
+
         if (groundTileMap == null)
         {
             groundTileMap = gridManager.GetWalkableTileMap();
         }
+
         if(collisionTileMap == null)
         {
             collisionTileMap = gridManager.GetCollisionTileMap();
         }
 
-        gridPosition = new Vector2Int(0, 0);
-
-        if (DebuggingMovement)
-        {
-            Move(DebugMoveTarget);
-        }
-
         if (creatureTile == null)
         {
-            GetTile(new Vector2Int((int)transform.position.x, (int)transform.position.y));
+            UpdateCreatureTile();
         }
+
+        if (pathfinding == null)
+        {
+            Debug.LogWarning("Pathfinding was NULL for some reason.");
+            pathfinding = ScriptableObject.CreateInstance<Pathfinding>();
+        }
+
+        gridManager.LazyAddCreature(this);
+
+        pathfinding.SetTilemap(groundTileMap);
+
     }
 
-    /**
-     * Dictates movement of a character with an assumption of using the 16x16 pixel movement, though currently
-     * there is nothing that requires a specific pixel amount or size.
-     * 
-     * Move is called by Start in debug characters, and will be called by events responding to Input as well.
-     * 
-     * this.targetPosition is continually moved towards in the Update() method.
-     */
-    public void Move(Vector2Int targetPosition)
+    private void UpdateCreatureTile()
     {
-        this.targetPosition = targetPosition;
+        creatureTile = groundTileMap.GetTile(new Vector3Int((int)transform.position.x, (int)transform.position.y, (int)transform.position.z));
     }
+
 
     void Update()
     {
-        Vector2Int transformV2i = new Vector2Int((int)transform.position.x, (int)transform.position.y);
-
-        Tile targetTile = GetTile(targetPosition);
-        
-        if (creatureTile.transform.GetPosition() != targetTile.transform.GetPosition())
+        if (creatureTile == null)
         {
-            Vector2 moveDirection = (targetPosition - transformV2i);
-            float t = Time.deltaTime;
+            creatureTile = groundTileMap.GetTile(transform.position.x, transform.position.y);
+        }
+    }
 
-            Vector3 moveVector = (moveDirection * moveSpeed * t).normalized;
-            Vector3 moveVectorSecondary;
-            if (Math.Abs((int)moveVector.x) > Math.Abs((int)moveVector.y) && ((int)moveVector.x != 0 || (int) moveVector.y != 0))
+    public void MouseClicked(SmartTile tile)
+    {
+        if (tile != null && this.selected)
+        {
+            Debug.Log(name + " to " + tile.ToString() + " from " + this.creatureTile.ToString());
+            if (tile.ToString() != this.creatureTile.ToString())
             {
-                moveVector = moveVector.x < 0 ? new Vector3(-1, 0, 0) : new Vector3(1, 0, 0);
-                moveVectorSecondary = moveVector.y < 0 ? new Vector3(0, -1, 0) : new Vector3(0, 1, 0);
+                if (isMoving) return;
+                path = pathfinding.FindPath(this.creatureTile, tile);
+                animator.Animate(path[0].GetLocationAsV3(), 5000);
+                if (path != null) StartCoroutine(MoveToTile());
+                else Debug.LogWarning("Something happened when trying to get to " + tile.ToString() + " from " + creatureTile.ToString());  
+            }
+            else Debug.Log(name + " cannot move to tile, already there.");
+        }
+    }
+
+    private IEnumerator MoveToTile()
+    {
+        isMoving = true;
+        bool readyForNextTile = false;
+        Vector3 NextTile = this.IMPOSSIBLE_V3;
+        Debug.Log("PATH COUNT " + path.Count);
+        for (int t = 1; t < path.Count;)
+        {
+            NextTile = path[t].GetLocationAsV3();
+
+            if (!readyForNextTile)
+            {
+                readyForNextTile = JumpAlongPath(NextTile);
+                UpdateCreatureTile();
+                t++;
+            }
+
+            yield return new WaitForEndOfFrame();
+        }
+
+        // Finalization of placement ensures Character ends up where they should be even in edge cases.
+        transform.position = NextTile;
+        UpdateCreatureTile();
+        animator.StopAnimating();
+
+        path = null;
+        isMoving = false;
+    }
+
+
+    private IEnumerator MoveToTileWorking()
+    {
+        isMoving = true;
+        float stepCount = 1;
+        float maxStep = 40;
+        Vector3 NextTile = this.IMPOSSIBLE_V3;
+        Debug.Log("PATH COUNT " + path.Count);
+        for (int t = 1; t < path.Count; t++)
+        {
+            NextTile = path[t].GetLocationAsV3();
+
+            if (stepCount <= maxStep)
+            {
+                JumpAlongPath(NextTile);
+                stepCount++;
             }
             else
             {
-                moveVector = moveVector.y < 0 ? new Vector3(0, -1, 0) : new Vector3(0, 1, 0);
-                moveVectorSecondary = moveVector.x < 0 ? new Vector3(-1, 0, 0) : new Vector3(1, 0, 0);
+                stepCount = 1;
+                UpdateCreatureTile();
             }
 
-            if (!CheckForObstacles(moveVector))
-            {
-                
-                transform.position += moveVector;
-                this.animator.Animate(moveDirection, t / moveSpeed);
-            }
-            else if (!CheckForObstacles(moveVectorSecondary))
-            {
-                transform.position += moveVectorSecondary;
-                this.animator.Animate(moveDirection, t / moveSpeed);
-            }
-            else
-            {
-                this.targetPosition = transformV2i;
-            }
-        }
-        else
-        {
-            this.animator.StopAnimating();
+            t = stepCount < maxStep ? t - 1 : t;
+
+            yield return new WaitForFixedUpdate();
         }
 
+        // Finalization of placement ensures Character ends up where they should be even in edge cases.
+        transform.position = NextTile;
+        UpdateCreatureTile();
+        animator.StopAnimating();
+
+        path = null;
+        isMoving = false;
     }
 
-    private Tile GetTile(Vector2Int targetPosition)
+
+    private bool JumpAlongPath(Vector3 nextTile)
     {
-        Tile tile = new Tile();
+        // Readability obj
+        Vector3 pos = transform.position;
 
-            
-
-        return tile;
-    }
-
-    private bool CheckForObstacles(Vector3 moveVector)
-    {
-        Vector3Int testPosition = groundTileMap.WorldToCell(transform.position + (Vector3)(transform.position + moveVector));
-        if(collisionTileMap.HasTile(testPosition))
+        if (Vector3.Distance(pos, nextTile) <= moveSpeed)
         {
             return true;
         }
+
+        // Partial step
+        transform.position = Vector3.Lerp(pos, nextTile, moveSpeed * Time.deltaTime);
+
+        Vector3 dir = GetDirectionTo(nextTile);
+        
         return false;
     }
+    private void JumpAlongPathWorking(Vector3 nextTile, float countStep, float maxStep)
+    {
+        // Readability obj
+        Vector3 pos = transform.position;
+
+        if (countStep == maxStep)
+        {
+            transform.position = nextTile;
+        }
+
+        // Partial step
+        transform.position = Vector3.Lerp(pos, nextTile, (countStep / maxStep) * (Time.fixedDeltaTime / moveSpeed));
+
+        Vector3 dir = GetDirectionTo(nextTile);
+        // Update Animation too!
+        animator.Animate(dir, 5000);
+    }
+
+    private Vector3 GetDirectionTo(Vector3 nextTile)
+    {
+        Vector3 dir = Vector3.zero;
+
+        dir = nextTile - transform.position;
+
+        return dir;
+    }
+
+    private IEnumerator MoveToNextTile(Vector3 NextTile)
+    {
+        path.RemoveAt(0);
+        
+        float step = .5f * (transform.position - NextTile).magnitude * Time.deltaTime;
+        float t = 0f;
+        while (t <= 1f)
+        {
+            t += .5f;
+            transform.position = Vector3.Lerp(transform.position, NextTile, t);
+            UpdateCreatureTile();
+            Debug.Log("Moved to " + this.creatureTile.ToString());
+            yield return new WaitForFixedUpdate();
+        }
+        transform.position = NextTile;
+    }
+
+    public Pathfinding GetPathfinding()
+    {
+        return this.pathfinding;
+    }
+
+    internal SmartTile GetTile()
+    {
+        return this.creatureTile;
+    }
+
 }
