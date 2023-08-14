@@ -61,10 +61,16 @@ public class CreatureAnimator : MonoBehaviour
         }
     }
 
-    internal void StopAnimating()
+    // This is the T-Pose of each sprite.
+    internal void ResetAnimation()
     {
         animating = false;
         GetComponentInChildren<SpriteRenderer>().sprite = frontSprites[0];
+    }
+
+    public void StopAnimating()
+    {
+        animating = false;
     }
 
     public void Animate(Vector3 dir, float time)

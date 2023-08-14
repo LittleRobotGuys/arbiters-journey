@@ -2633,7 +2633,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sprite: {fileID: 724538671}
-  moveSpeed: 0.1
+  moveSpeed: 0.33
   selected: 1
   animator: {fileID: 724538675}
   pathfinding: {fileID: 11400000, guid: fb590fd29e1557f4e96cddb55c46fdfb, type: 2}

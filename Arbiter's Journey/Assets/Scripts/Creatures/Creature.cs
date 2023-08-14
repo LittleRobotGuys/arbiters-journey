@@ -3,14 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using UnityEngine.WSA;
+using DG.Tweening;
 
 public class Creature : MonoBehaviour
 {
     [SerializeField]
     private SpriteRenderer sprite;
     [SerializeField]
-    private float moveSpeed = 0.04f;
+    private float moveSpeed = .25f;
     [SerializeField]
     private bool selected = false;
     [SerializeField]
@@ -100,7 +100,7 @@ public class Creature : MonoBehaviour
             {
                 if (isMoving) return;
                 path = pathfinding.FindPath(this.creatureTile, tile);
-                animator.Animate(path[0].GetLocationAsV3(), 5000);
+                // animator.Animate(path[0].GetLocationAsV3(), 5000);
                 if (path != null) StartCoroutine(MoveToTile());
                 else Debug.LogWarning("Something happened when trying to get to " + tile.ToString() + " from " + creatureTile.ToString());  
             }
@@ -108,19 +108,22 @@ public class Creature : MonoBehaviour
         }
     }
 
+
+    bool readyForNextTile = true;
     private IEnumerator MoveToTile()
     {
         isMoving = true;
-        bool readyForNextTile = false;
+        readyForNextTile = true;
+
         Vector3 NextTile = this.IMPOSSIBLE_V3;
         Debug.Log("PATH COUNT " + path.Count);
         for (int t = 1; t < path.Count;)
         {
             NextTile = path[t].GetLocationAsV3();
 
-            if (!readyForNextTile)
+            if (readyForNextTile)
             {
-                readyForNextTile = JumpAlongPath(NextTile);
+                TweenAlongPath(NextTile);
                 UpdateCreatureTile();
                 t++;
             }
@@ -131,110 +134,25 @@ public class Creature : MonoBehaviour
         // Finalization of placement ensures Character ends up where they should be even in edge cases.
         transform.position = NextTile;
         UpdateCreatureTile();
-        animator.StopAnimating();
+        animator.ResetAnimation();
 
         path = null;
         isMoving = false;
     }
-
-
-    private IEnumerator MoveToTileWorking()
+    private void TweenAlongPath(Vector3 path)
     {
-        isMoving = true;
-        float stepCount = 1;
-        float maxStep = 40;
-        Vector3 NextTile = this.IMPOSSIBLE_V3;
-        Debug.Log("PATH COUNT " + path.Count);
-        for (int t = 1; t < path.Count; t++)
-        {
-            NextTile = path[t].GetLocationAsV3();
-
-            if (stepCount <= maxStep)
-            {
-                JumpAlongPath(NextTile);
-                stepCount++;
-            }
-            else
-            {
-                stepCount = 1;
-                UpdateCreatureTile();
-            }
-
-            t = stepCount < maxStep ? t - 1 : t;
-
-            yield return new WaitForFixedUpdate();
-        }
-
-        // Finalization of placement ensures Character ends up where they should be even in edge cases.
-        transform.position = NextTile;
-        UpdateCreatureTile();
+        // DOMove(end,duration, snapping)
+        readyForNextTile = false;
+        animator.Animate(path - transform.position, moveSpeed);
+        transform.DOMove(path, moveSpeed, true).OnComplete(MoveOn);
         animator.StopAnimating();
-
-        path = null;
-        isMoving = false;
     }
 
-
-    private bool JumpAlongPath(Vector3 nextTile)
+    private void MoveOn()
     {
-        // Readability obj
-        Vector3 pos = transform.position;
-
-        if (Vector3.Distance(pos, nextTile) <= moveSpeed)
-        {
-            return true;
-        }
-
-        // Partial step
-        transform.position = Vector3.Lerp(pos, nextTile, moveSpeed * Time.deltaTime);
-
-        Vector3 dir = GetDirectionTo(nextTile);
-        
-        return false;
-    }
-    private void JumpAlongPathWorking(Vector3 nextTile, float countStep, float maxStep)
-    {
-        // Readability obj
-        Vector3 pos = transform.position;
-
-        if (countStep == maxStep)
-        {
-            transform.position = nextTile;
-        }
-
-        // Partial step
-        transform.position = Vector3.Lerp(pos, nextTile, (countStep / maxStep) * (Time.fixedDeltaTime / moveSpeed));
-
-        Vector3 dir = GetDirectionTo(nextTile);
-        // Update Animation too!
-        animator.Animate(dir, 5000);
+        readyForNextTile = true;
     }
 
-    private Vector3 GetDirectionTo(Vector3 nextTile)
-    {
-        Vector3 dir = Vector3.zero;
-
-        dir = nextTile - transform.position;
-
-        return dir;
-    }
-
-    private IEnumerator MoveToNextTile(Vector3 NextTile)
-    {
-        path.RemoveAt(0);
-        
-        float step = .5f * (transform.position - NextTile).magnitude * Time.deltaTime;
-        float t = 0f;
-        while (t <= 1f)
-        {
-            t += .5f;
-            transform.position = Vector3.Lerp(transform.position, NextTile, t);
-            UpdateCreatureTile();
-            Debug.Log("Moved to " + this.creatureTile.ToString());
-            yield return new WaitForFixedUpdate();
-        }
-        transform.position = NextTile;
-    }
 
     public Pathfinding GetPathfinding()
     {
