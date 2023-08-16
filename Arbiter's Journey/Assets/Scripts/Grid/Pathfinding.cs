@@ -3,8 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Tilemaps;
-using static UnityEngine.GraphicsBuffer;
 
 [CreateAssetMenu(fileName = "Pathfinding", menuName = "ScriptableObjects/Pathfinding", order = 0)]
 public class Pathfinding : ScriptableObject
@@ -44,7 +42,21 @@ public class Pathfinding : ScriptableObject
         while(openList.Count > 0)
         {
             PathNode current = GetLowestFCostNode(openList);
-            if (current.GetLocation() == endNode.GetLocation()) {
+            if (current.GetLocation() == endNode.GetLocation()) 
+            {
+                Interactable obj = endTile.GetObjectOnIt();
+                if (obj != null) 
+                {
+                    if (!obj.IsCollectible())
+                    {
+                        List<PathNode> retPath = CalcPath(current.GetPreviousNode());
+                        current.SetPreviousNode(null);
+                        return retPath;
+                    }
+
+                    obj.Interact();
+                }
+
                 return CalcPath(current);
             }
 
@@ -82,10 +94,10 @@ public class Pathfinding : ScriptableObject
         List<PathNode> path = new List<PathNode> ();
         path.Add(endNode);
         PathNode current = endNode;
-        while (current.getPreviousNode() != null) 
+        while (current.GetPreviousNode() != null) 
         {
-            path.Add(current.getPreviousNode());
-            current = current.getPreviousNode();
+            path.Add(current.GetPreviousNode());
+            current = current.GetPreviousNode();
         }
 
         path.Reverse();

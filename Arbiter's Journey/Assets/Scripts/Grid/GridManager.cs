@@ -74,7 +74,7 @@ public class GridManager : MonoBehaviour
 
         foreach (Creature c in creatureList)
         {
-            c.MouseClicked(terrainMap.GetTile(gridPos));
+            if (c.IsSelected()) c.MouseClicked(terrainMap.GetTileSansOffset(gridPos));
         }
 
         if (DrawingDebugPaths)

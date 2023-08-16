@@ -54,31 +54,31 @@ public class PathNode
         List<PathNode> returnNodes = new List<PathNode>();
 
         // Left
-        SmartTile botleft = tilemap.GetTile(location.x - 1, location.y - 1);
+        SmartTile botleft = tilemap.GetTileSansOffset(location.x - 1, location.y - 1);
         if (botleft != null) returnNodes.Add(botleft.GetPathNode());
-        SmartTile midleft = tilemap.GetTile(location.x - 1, location.y);
+        SmartTile midleft = tilemap.GetTileSansOffset(location.x - 1, location.y);
         if (midleft != null) returnNodes.Add(midleft.GetPathNode());
-        SmartTile topleft = tilemap.GetTile(location.x - 1, location.y + 1);
+        SmartTile topleft = tilemap.GetTileSansOffset(location.x - 1, location.y + 1);
         if (topleft != null) returnNodes.Add(topleft.GetPathNode());
 
         // Top and Bottom
-        SmartTile top = tilemap.GetTile(location.x, location.y - 1);
+        SmartTile top = tilemap.GetTileSansOffset(location.x, location.y - 1);
         if (top != null) returnNodes.Add(top.GetPathNode());
-        SmartTile bot = tilemap.GetTile(location.x, location.y + 1);
+        SmartTile bot = tilemap.GetTileSansOffset(location.x, location.y + 1);
         if (bot != null) returnNodes.Add(bot.GetPathNode());
 
         // Right
-        SmartTile botright = tilemap.GetTile(location.x + 1, location.y - 1);
+        SmartTile botright = tilemap.GetTileSansOffset(location.x + 1, location.y - 1);
         if (botright != null) returnNodes.Add(botright.GetPathNode());
-        SmartTile midright = tilemap.GetTile(location.x + 1, location.y);
+        SmartTile midright = tilemap.GetTileSansOffset(location.x + 1, location.y);
         if (midright != null) returnNodes.Add(midright.GetPathNode());
-        SmartTile topright = tilemap.GetTile(location.x + 1, location.y + 1);
+        SmartTile topright = tilemap.GetTileSansOffset(location.x + 1, location.y + 1);
         if (topright != null) returnNodes.Add(topright.GetPathNode());
 
         return returnNodes;
     }
 
-    internal PathNode getPreviousNode()
+    internal PathNode GetPreviousNode()
     {
         return prevNode;
     }

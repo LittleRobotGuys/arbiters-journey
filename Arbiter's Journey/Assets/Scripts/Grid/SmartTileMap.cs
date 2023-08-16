@@ -1,3 +1,4 @@
+using DG.Tweening;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,6 +7,7 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using UnityEngine.UIElements;
 
 public class SmartTileMap : MonoBehaviour
 {
@@ -17,6 +19,8 @@ public class SmartTileMap : MonoBehaviour
 
     [SerializeField]
     private Dictionary<string, SmartTile> allTiles;
+    private Vector3 origin = Vector3.zero;
+    private Vector3 cameraOffset = Vector3.zero;
 
     public Vector2Int size { get; internal set; }
 
@@ -78,18 +82,6 @@ public class SmartTileMap : MonoBehaviour
         return cellCurrent;
     }
 
-    public SmartTile GetTile(Vector3Int position)
-    {
-        string key = position.x + "," + position.y;
-        
-        if (allTiles.ContainsKey(key))
-        {
-            return allTiles[key];
-        }
-        
-        return null;
-    }
-
     // Needs tested
     public PathNode GetPathNode(Vector2Int vector2Int)
     {
@@ -132,13 +124,75 @@ public class SmartTileMap : MonoBehaviour
         allTiles.Remove(t);
     }
 
-    internal SmartTile GetTile(float x, float y)
+    // Uses cameraOffset.  All QOL versions should refer to this method.
+    public SmartTile GetTile(float x, float y)
+    {
+        return allTiles.GetValueOrDefault(((int)x + cameraOffset.x) + "," + ((int)y + cameraOffset.y));
+    }
+
+    public SmartTile GetTile(Vector3 position)
+    {
+        return GetTile((int)position.x, (int)position.y);
+    }
+    public SmartTile GetTile(Vector3Int position)
+    {
+        return GetTile(position.x, position.y);
+    }
+
+    // Ignores cameraOffset.  Useful for direct input.
+    public SmartTile GetTileSansOffset(float x, float y)
     {
         return allTiles.GetValueOrDefault((int)x + "," + (int)y);
     }
 
-    internal bool ContainsTileAt(Vector3Int target)
+    internal SmartTile GetTileSansOffset(Vector3Int gridPos)
+    {
+        return GetTileSansOffset(gridPos.x, gridPos.y);
+    }
+
+
+
+    public bool ContainsTileAt(Vector3Int target)
     {
         return GetTile(target) != null;
+    }
+
+    public void LoadEast(Creature character)
+    {
+        cameraOffset.x +=  (2 * GetXRadius())+0.5f;
+        Camera.main.transform.DOMoveX(cameraOffset.x, 1f, false).OnComplete(() => character.UpdateCreatureTile());
+        character.transform.DOMoveX(character.transform.position.x + 3f, 1f, false).OnComplete(() => character.UpdateCreatureTile());
+    }
+
+    public void LoadWest(Creature character)
+    {
+        cameraOffset.x -= (2 * GetXRadius()) - 0.5f;
+        Camera.main.transform.DOMoveX(cameraOffset.x, 1f, false).OnComplete(() => character.UpdateCreatureTile());
+        character.transform.DOMoveX(character.transform.position.x - 3f, 1f, false).OnComplete(() => character.UpdateCreatureTile());
+    }
+
+    public void LoadNorth(Creature character)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void LoadSouth(Creature character)
+    {
+        throw new NotImplementedException();
+    }
+
+    internal Vector3 GetOrigin()
+    {
+        return origin;
+    }
+
+    internal Vector3 GetOffset()
+    {
+        return cameraOffset;
+    }
+
+    internal int GetXRadius()
+    {
+        return 15;
     }
 }

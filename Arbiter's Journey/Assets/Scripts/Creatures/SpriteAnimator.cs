@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
-public class CreatureAnimator : MonoBehaviour
+public class SpriteAnimator : MonoBehaviour
 {
     [SerializeField]
     private int animationIndex = 0, animationNumber = 0, animationsPerCycle = 4;

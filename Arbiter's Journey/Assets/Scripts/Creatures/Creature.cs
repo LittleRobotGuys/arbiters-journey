@@ -2,19 +2,17 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 using DG.Tweening;
+using UnityEngine.TerrainUtils;
 
 public class Creature : MonoBehaviour
 {
     [SerializeField]
     private SpriteRenderer sprite;
     [SerializeField]
-    private float moveSpeed = .25f;
-    [SerializeField]
     private bool selected = false;
     [SerializeField]
-    private CreatureAnimator animator = null;
+    private SpriteAnimator animator = null;
 
     [SerializeField]
     private Pathfinding pathfinding;
@@ -26,8 +24,32 @@ public class Creature : MonoBehaviour
     private SmartTileMap groundTileMap;
     [SerializeField] 
     private SmartTileMap collisionTileMap;
-    private bool isMoving = false;
     private Vector3 IMPOSSIBLE_V3 = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+    
+    // Interactions
+    [SerializeField]
+    private Interactable interactable;
+
+    // Movement stuff
+    [SerializeField]
+    private float moveSpeed = .25f;
+    bool readyForNextTile = true;
+
+    // Audio
+    public AudioSource audioSrc;
+    public AudioClip GrassClip1;
+    public AudioClip GrassClip2;
+    public AudioClip StoneClip1;
+    public AudioClip StoneClip2;
+    public AudioClip GravelClip1;
+    public AudioClip GravelClip2;
+    public AudioClip SnowClip1;
+    public AudioClip SnowClip2;
+
+    private bool leftFoot = false;
+
+    private bool isMuted = true;
+
 
     private void Awake()
     {
@@ -38,8 +60,20 @@ public class Creature : MonoBehaviour
 
         if (animator == null)
         {
-            animator = gameObject.GetComponent<CreatureAnimator>();
+            animator = gameObject.GetComponent<SpriteAnimator>();
         }
+
+        if (interactable == null)
+        {
+            interactable = gameObject.GetComponent<Interactable>();
+            if (interactable == null)
+            {
+                interactable = gameObject.AddComponent<Interactable>();
+
+            }
+        }
+
+        interactable.SetDefaultNPC();
     }
 
     void Start()
@@ -74,45 +108,102 @@ public class Creature : MonoBehaviour
         gridManager.LazyAddCreature(this);
 
         pathfinding.SetTilemap(groundTileMap);
-
+        UpdateCreatureTile();
+        isMuted = false;
     }
 
-    private void UpdateCreatureTile()
+    public void UpdateCreatureTile()
     {
-        creatureTile = groundTileMap.GetTile(new Vector3Int((int)transform.position.x, (int)transform.position.y, (int)transform.position.z));
+        var pos = transform.position;
+        creatureTile = groundTileMap.GetTileSansOffset(groundTileMap.WorldToCell(pos));
+
+        if (creatureTile != null)
+        {
+            creatureTile.ClearInventory();
+            creatureTile.AddInventory(gameObject);
+            PlayTileSound(creatureTile.name.ToLower());
+        }
     }
 
+    private void RequestCardinalMap()
+    {
+        float left = groundTileMap.GetOrigin().x + groundTileMap.GetOffset().x - 1 - groundTileMap.GetXRadius();
+
+        if (creatureTile.x >= groundTileMap.GetOrigin().x + groundTileMap.GetOffset().x - 1)
+        {
+            LeaveTile();
+            groundTileMap.LoadEast(this);
+        }
+        else if (creatureTile.x <= left)
+        {
+            groundTileMap.LoadWest(this);
+        }
+        else if (creatureTile.y >= 8)
+        {
+            groundTileMap.LoadNorth(this);
+        }
+        else if (creatureTile.y <= -8)
+        {
+            groundTileMap.LoadSouth(this);
+        }
+    }
+
+    private void LeaveTile()
+    {
+        if (creatureTile != null) creatureTile.ClearInventory();
+    }
+
+    private void PlayTileSound(string v)
+    {
+        if (isMuted) return;
+
+        AudioClip clip = null;
+        if (v.Contains("grass"))
+        {
+            clip = leftFoot ? GrassClip1 : GrassClip2;
+        }
+        else if (v.Contains("stone"))
+        {
+            clip = leftFoot ? StoneClip1 : StoneClip2;
+        }
+        else if (v.Contains("gravel"))
+        {
+            clip = leftFoot ? GravelClip1 : GravelClip2;
+        }
+        else if (v.Contains("snow"))
+        {
+            clip = leftFoot ? SnowClip1 : SnowClip2;
+        }
+        audioSrc.PlayOneShot(clip);
+        leftFoot = !leftFoot;
+    }
 
     void Update()
     {
-        if (creatureTile == null)
-        {
-            creatureTile = groundTileMap.GetTile(transform.position.x, transform.position.y);
-        }
     }
 
     public void MouseClicked(SmartTile tile)
     {
-        if (tile != null && this.selected)
+        audioSrc.Play();
+
+        if (tile != null)
         {
-            Debug.Log(name + " to " + tile.ToString() + " from " + this.creatureTile.ToString());
+            if (creatureTile == null)
+            {
+                UpdateCreatureTile();
+            }
             if (tile.ToString() != this.creatureTile.ToString())
             {
-                if (isMoving) return;
                 path = pathfinding.FindPath(this.creatureTile, tile);
-                // animator.Animate(path[0].GetLocationAsV3(), 5000);
                 if (path != null) StartCoroutine(MoveToTile());
                 else Debug.LogWarning("Something happened when trying to get to " + tile.ToString() + " from " + creatureTile.ToString());  
             }
             else Debug.Log(name + " cannot move to tile, already there.");
         }
     }
-
-
-    bool readyForNextTile = true;
+    
     private IEnumerator MoveToTile()
     {
-        isMoving = true;
         readyForNextTile = true;
 
         Vector3 NextTile = this.IMPOSSIBLE_V3;
@@ -123,6 +214,7 @@ public class Creature : MonoBehaviour
 
             if (readyForNextTile)
             {
+                LeaveTile();
                 TweenAlongPath(NextTile);
                 UpdateCreatureTile();
                 t++;
@@ -135,22 +227,16 @@ public class Creature : MonoBehaviour
         transform.position = NextTile;
         UpdateCreatureTile();
         animator.ResetAnimation();
-
+        RequestCardinalMap();
         path = null;
-        isMoving = false;
     }
     private void TweenAlongPath(Vector3 path)
     {
         // DOMove(end,duration, snapping)
         readyForNextTile = false;
         animator.Animate(path - transform.position, moveSpeed);
-        transform.DOMove(path, moveSpeed, true).OnComplete(MoveOn);
+        transform.DOMove(path, moveSpeed, true).OnComplete(() => readyForNextTile = true);
         animator.StopAnimating();
-    }
-
-    private void MoveOn()
-    {
-        readyForNextTile = true;
     }
 
 
@@ -164,4 +250,8 @@ public class Creature : MonoBehaviour
         return this.creatureTile;
     }
 
+    internal bool IsSelected()
+    {
+        return selected;
+    }
 }
