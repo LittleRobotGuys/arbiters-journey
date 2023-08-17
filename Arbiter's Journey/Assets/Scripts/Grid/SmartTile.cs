@@ -27,7 +27,7 @@ public class SmartTile
         x = tilemap.WorldToCell(position).x;
         y = tilemap.WorldToCell(position).y;
         z = tilemap.WorldToCell (position).z;
-        Debug.Log("Tile in " + tilemap.name + " created: " + x + ',' + y);
+        // Debug.Log("Tile in " + tilemap.name + " created: " + x + ',' + y);
     }
 
     public bool hasPathNode()

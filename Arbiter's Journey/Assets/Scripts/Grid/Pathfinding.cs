@@ -51,13 +51,15 @@ public class Pathfinding : ScriptableObject
                     {
                         List<PathNode> retPath = CalcPath(current.GetPreviousNode());
                         current.SetPreviousNode(null);
+                        obj.Interact();
                         return retPath;
                     }
 
                     obj.Interact();
                 }
-
-                return CalcPath(current);
+                var path = CalcPath(current);
+                DebugDraw.DebugPath(path);
+                return path;
             }
 
             openList.Remove(current);

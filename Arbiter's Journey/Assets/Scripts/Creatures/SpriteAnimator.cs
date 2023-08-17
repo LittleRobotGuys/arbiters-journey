@@ -83,7 +83,6 @@ public class SpriteAnimator : MonoBehaviour
 
     private IEnumerator StartAnimating(Vector3 direction, float t)
     {
-        Debug.Log("Starting animating: Direction (" + direction.x + ", " + direction.y + ")");
         animating = true;
         while (animating)
         {
@@ -116,7 +115,6 @@ public class SpriteAnimator : MonoBehaviour
         {
             if (animationIndex >= animationsPerCycle)
             {
-                Debug.Log("Animator index: " + animationIndex);
                 animationIndex = 0;
             }
             GetComponentInChildren<SpriteRenderer>().sprite = backSprites[ndx];

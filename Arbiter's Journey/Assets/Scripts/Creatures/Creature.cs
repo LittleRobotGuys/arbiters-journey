@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 using UnityEngine.TerrainUtils;
+using DebugUtils;
 
 public class Creature : MonoBehaviour
 {
@@ -127,30 +128,37 @@ public class Creature : MonoBehaviour
 
     private void RequestCardinalMap()
     {
-        float left = groundTileMap.GetOrigin().x + groundTileMap.GetOffset().x - 1 - groundTileMap.GetXRadius();
 
-        if (creatureTile.x >= groundTileMap.GetOrigin().x + groundTileMap.GetOffset().x - 1)
+        if (creatureTile.x == groundTileMap.GetOffset().x * groundTileMap.GetXRadius() + groundTileMap.GetXRadius() - 1)
         {
             LeaveTile();
-            groundTileMap.LoadEast(this);
+            groundTileMap.MoveCameraEast(this);
         }
-        else if (creatureTile.x <= left)
+        else if (creatureTile.x == groundTileMap.GetOffset().x * groundTileMap.GetXRadius() + 1)
         {
-            groundTileMap.LoadWest(this);
+            LeaveTile();
+            groundTileMap.MoveCameraWest(this);
         }
+        // Need similar checking for up and down
         else if (creatureTile.y >= 8)
         {
-            groundTileMap.LoadNorth(this);
+            LeaveTile();
+            groundTileMap.MoveCameraNorth(this);
         }
         else if (creatureTile.y <= -8)
         {
-            groundTileMap.LoadSouth(this);
+            LeaveTile();
+            groundTileMap.MoveCameraSouth(this);
         }
     }
 
-    private void LeaveTile()
+    private SmartTile LeaveTile()
     {
-        if (creatureTile != null) creatureTile.ClearInventory();
+        if (creatureTile != null)
+        {
+            creatureTile.ClearInventory();
+        }
+        return creatureTile;
     }
 
     private void PlayTileSound(string v)
@@ -180,10 +188,15 @@ public class Creature : MonoBehaviour
 
     void Update()
     {
+        if (transform.position.x > 100 || transform.position.x < -100)
+        {
+            Debug.Log("HERE");
+        }
     }
 
-    public void MouseClicked(SmartTile tile)
+    public void TileSelected(SmartTile tile)
     {
+        // Default audio plays on click
         audioSrc.Play();
 
         if (tile != null)
@@ -196,25 +209,29 @@ public class Creature : MonoBehaviour
             {
                 path = pathfinding.FindPath(this.creatureTile, tile);
                 if (path != null) StartCoroutine(MoveToTile());
-                else Debug.LogWarning("Something happened when trying to get to " + tile.ToString() + " from " + creatureTile.ToString());  
+                else Debug.LogWarning("Something happened when trying to get to " + tile.ToString() + " from " + creatureTile.ToString());
             }
-            else Debug.Log(name + " cannot move to tile, already there.");
+            else
+            {
+                Debug.Log(name + " cannot move to tile, already there.");
+                return;
+            }
         }
     }
     
     private IEnumerator MoveToTile()
     {
         readyForNextTile = true;
+        SmartTile lastTile = null;
 
         Vector3 NextTile = this.IMPOSSIBLE_V3;
-        Debug.Log("PATH COUNT " + path.Count);
         for (int t = 1; t < path.Count;)
         {
             NextTile = path[t].GetLocationAsV3();
 
             if (readyForNextTile)
             {
-                LeaveTile();
+                lastTile = LeaveTile();
                 TweenAlongPath(NextTile);
                 UpdateCreatureTile();
                 t++;
@@ -224,6 +241,7 @@ public class Creature : MonoBehaviour
         }
 
         // Finalization of placement ensures Character ends up where they should be even in edge cases.
+        LeaveTile();
         transform.position = NextTile;
         UpdateCreatureTile();
         animator.ResetAnimation();

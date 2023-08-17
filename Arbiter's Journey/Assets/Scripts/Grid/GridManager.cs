@@ -22,9 +22,6 @@ public class GridManager : MonoBehaviour
     [SerializeField]
     private Creature debugCreature;
 
-    [SerializeField]
-    private bool DrawingDebugPaths = true;
-
     private void Awake()
     {
         movementControls = new Movement();
@@ -74,48 +71,7 @@ public class GridManager : MonoBehaviour
 
         foreach (Creature c in creatureList)
         {
-            if (c.IsSelected()) c.MouseClicked(terrainMap.GetTileSansOffset(gridPos));
-        }
-
-        if (DrawingDebugPaths)
-        {
-            DebugDraw.X(new Vector2Int(gridPos.x, gridPos.y));
-            DebugPath(debugCreature, gridPos);
-        }
-    }
-
-    private void DebugPath(Creature debugCreature, Vector3Int target)
-    {
-        if (debugCreature == null)
-        {
-            Debug.LogError("Creature is null");
-            return;
-        }
-        if (!terrainMap.ContainsTileAt(target))
-        {
-            Debug.LogError("Target is not in the terrainMap");
-        }
-        if (obstacleMap.ContainsTileAt(target))
-        {
-            Debug.LogError("Target is in the obstacleMap");
-            return;
-        }
-
-        Pathfinding p = debugCreature.GetPathfinding();
-
-        List<PathNode> debugPath = GetPath(debugCreature, p, target);
-
-        if (debugPath != null)
-        {
-            foreach (PathNode pathNode in debugPath)
-            {
-                DebugDraw.X(pathNode.GetLocation());
-            }
-        }
-
-        else
-        {
-            Debug.Log("No path found to " + target.ToString());
+            if (c.IsSelected()) c.TileSelected(terrainMap.GetTileSansOffset(gridPos));
         }
     }
 

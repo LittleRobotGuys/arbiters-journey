@@ -26,7 +26,7 @@ public class Interactable : MonoBehaviour
     private string description = null;
     private string defaultDescription = "Something";
 
-    private void Awake()
+    private void Start()
     {
         inventory = new List<GameObject>();
         if (isCollectible)
@@ -60,7 +60,9 @@ public class Interactable : MonoBehaviour
             }
         }
 
-        tilemap.GetTile(transform.position).AddInventory(gameObject);
+        var tile = tilemap.GetTile(transform.position);
+        Debug.Log(name + " is now being added to the inventory of " + tile.ToString());
+        tile.AddInventory(gameObject);
     }
 
     internal void Interact()

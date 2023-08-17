@@ -1,3 +1,4 @@
+using DebugUtils;
 using DG.Tweening;
 using System;
 using System.Collections;
@@ -20,7 +21,10 @@ public class SmartTileMap : MonoBehaviour
     [SerializeField]
     private Dictionary<string, SmartTile> allTiles;
     private Vector3 origin = Vector3.zero;
+
+    // Number of full screens away from origin (0,0).  So a cameraOffset of (2,-3) is two full screens right, 3 sceens up from origin. 
     private Vector3 cameraOffset = Vector3.zero;
+    private Vector2Int tileRadius = new Vector2Int(15,8);
 
     public Vector2Int size { get; internal set; }
 
@@ -55,6 +59,7 @@ public class SmartTileMap : MonoBehaviour
             sb.Append(tile.ToString() + ", ");
 
             cellCurrent = UpdateCurrentCell(cellCurrent);
+            DebugDraw.X(new Vector2Int(tile.x, tile.y), Color.green);
         }
 
         Debug.Log(name + "'s tiles:\n\n" + sb.ToString());
@@ -157,28 +162,28 @@ public class SmartTileMap : MonoBehaviour
         return GetTile(target) != null;
     }
 
-    public void LoadEast(Creature character)
+    public void MoveCameraEast(Creature character)
     {
-        cameraOffset.x +=  (2 * GetXRadius())+0.5f;
-        Camera.main.transform.DOMoveX(cameraOffset.x, 1f, false).OnComplete(() => character.UpdateCreatureTile());
+        cameraOffset.x++;
+        Camera.main.transform.DOMoveX(cameraOffset.x * tileRadius.x * 2, 1f, false).OnComplete(() => character.UpdateCreatureTile());
         character.transform.DOMoveX(character.transform.position.x + 3f, 1f, false).OnComplete(() => character.UpdateCreatureTile());
     }
 
-    public void LoadWest(Creature character)
+    public void MoveCameraWest(Creature character)
     {
-        cameraOffset.x -= (2 * GetXRadius()) - 0.5f;
-        Camera.main.transform.DOMoveX(cameraOffset.x, 1f, false).OnComplete(() => character.UpdateCreatureTile());
+        cameraOffset.x--;
+        Camera.main.transform.DOMoveX(cameraOffset.x * tileRadius.x * -2, 1f, false).OnComplete(() => character.UpdateCreatureTile());
         character.transform.DOMoveX(character.transform.position.x - 3f, 1f, false).OnComplete(() => character.UpdateCreatureTile());
     }
 
-    public void LoadNorth(Creature character)
+    public void MoveCameraNorth(Creature character)
     {
-        throw new NotImplementedException();
+        cameraOffset.y++;
     }
 
-    public void LoadSouth(Creature character)
+    public void MoveCameraSouth(Creature character)
     {
-        throw new NotImplementedException();
+        cameraOffset.y--;
     }
 
     internal Vector3 GetOrigin()
@@ -193,6 +198,6 @@ public class SmartTileMap : MonoBehaviour
 
     internal int GetXRadius()
     {
-        return 15;
+        return this.tileRadius.x;
     }
 }
