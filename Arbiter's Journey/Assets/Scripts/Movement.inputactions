@@ -1,0 +1,122 @@
+{
+    "name": "Movement",
+    "maps": [
+        {
+            "name": "MovementMap",
+            "id": "f26043f0-d821-4f33-8c01-e851c365f58b",
+            "actions": [
+                {
+                    "name": "Movement",
+                    "type": "Button",
+                    "id": "1c18b00a-526a-4a78-878a-abbf8714ad3f",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Action",
+                    "type": "Button",
+                    "id": "e03fe710-b3cf-4dfe-8e57-62c48a388fc0",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Special",
+                    "type": "Button",
+                    "id": "6424b9d8-f8b9-46d6-b9cd-797636567297",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Inspect",
+                    "type": "Button",
+                    "id": "9149da67-c10c-4376-a48d-10ae7a4ebe4c",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "0d5dd692-cbcf-42ee-91af-331e5fb01361",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "Press(behavior=1)",
+                    "processors": "Normalize(max=1)",
+                    "groups": "Windoze",
+                    "action": "Movement",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "df5db931-fe00-4c3d-935b-5b02f1d6e8ac",
+                    "path": "<Touchscreen>/touch0/tap",
+                    "interactions": "Tap",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Movement",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f9603783-980e-4b3e-9991-e3632124d380",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "Press,Tap",
+                    "processors": "Normalize(max=1)",
+                    "groups": "",
+                    "action": "Action",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "4d26bbf3-afeb-47a6-ae7f-5d7f4bfd1959",
+                    "path": "<Mouse>/middleButton",
+                    "interactions": "Hold",
+                    "processors": "Normalize(max=1)",
+                    "groups": "",
+                    "action": "Special",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "350d16bb-a41a-4e89-94e7-bf18a8a4f07f",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "Hold",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Inspect",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c239c1bc-2deb-4d03-9dd4-3c3a2d2855db",
+                    "path": "<Touchscreen>/touch0/tap",
+                    "interactions": "Hold",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Inspect",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": [
+        {
+            "name": "Windoze",
+            "bindingGroup": "Windoze",
+            "devices": []
+        }
+    ]
+}
