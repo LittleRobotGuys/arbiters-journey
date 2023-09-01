@@ -5,6 +5,7 @@ using UnityEngine;
 using DG.Tweening;
 using UnityEngine.TerrainUtils;
 using DebugUtils;
+using static UnityEngine.RuleTile.TilingRuleOutput;
 
 public class Creature : MonoBehaviour
 {
@@ -19,13 +20,15 @@ public class Creature : MonoBehaviour
     private Pathfinding pathfinding;
 
     private SmartTile creatureTile;
+
+    public bool isMoving { get; private set; } = false;
+
     private List<PathNode> path;
 
     [SerializeField]
     private SmartTileMap groundTileMap;
     [SerializeField] 
     private SmartTileMap collisionTileMap;
-    private Vector3 IMPOSSIBLE_V3 = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
     
     // Interactions
     [SerializeField]
@@ -50,7 +53,7 @@ public class Creature : MonoBehaviour
     private bool leftFoot = false;
 
     private bool isMuted = true;
-
+    private Vector3 lastPosition;
 
     private void Awake()
     {
@@ -73,8 +76,6 @@ public class Creature : MonoBehaviour
 
             }
         }
-
-        interactable.SetDefaultNPC();
     }
 
     void Start()
@@ -111,16 +112,17 @@ public class Creature : MonoBehaviour
         pathfinding.SetTilemap(groundTileMap);
         UpdateCreatureTile();
         isMuted = false;
+        lastPosition = transform.position;
     }
 
     public void UpdateCreatureTile()
     {
-        var pos = transform.position;
-        creatureTile = groundTileMap.GetTileSansOffset(groundTileMap.WorldToCell(pos));
+        lastPosition = transform.position;
+        creatureTile = groundTileMap.GetTileSansOffset(groundTileMap.WorldToCell(lastPosition));
 
         if (creatureTile != null)
         {
-            creatureTile.ClearInventory();
+            creatureTile.PopInventory();
             creatureTile.AddInventory(gameObject);
             PlayTileSound(creatureTile.name.ToLower());
         }
@@ -190,6 +192,7 @@ public class Creature : MonoBehaviour
     {
         if (transform.position.x > 100 || transform.position.x < -100)
         {
+            transform.position = lastPosition.normalized;
             Debug.Log("HERE");
         }
     }
@@ -205,6 +208,10 @@ public class Creature : MonoBehaviour
             {
                 UpdateCreatureTile();
             }
+            if (isMoving)
+            {
+                return;
+            }    
             if (tile.ToString() != this.creatureTile.ToString())
             {
                 path = pathfinding.FindPath(this.creatureTile, tile);
@@ -221,33 +228,49 @@ public class Creature : MonoBehaviour
     
     private IEnumerator MoveToTile()
     {
-        readyForNextTile = true;
-        SmartTile lastTile = null;
-
-        Vector3 NextTile = this.IMPOSSIBLE_V3;
-        for (int t = 1; t < path.Count;)
+        Vector3 NextTile = transform.position;
+        if (path == null || path.Count < 1)
         {
-            NextTile = path[t].GetLocationAsV3();
+            FinalizePosition(transform.position);
+        }
+        else
+        {
+            readyForNextTile = true;
+            SmartTile lastTile = null;
+            isMoving = true;
 
-            if (readyForNextTile)
+            for (int t = 1; t < path.Count;)
             {
-                lastTile = LeaveTile();
-                TweenAlongPath(NextTile);
-                UpdateCreatureTile();
-                t++;
-            }
+                NextTile = path[t].GetLocationAsV3();
 
-            yield return new WaitForEndOfFrame();
+                if (readyForNextTile)
+                {
+                    lastTile = LeaveTile();
+                    TweenAlongPath(NextTile);
+                    UpdateCreatureTile();
+                    t++;
+                }
+
+                yield return new WaitForEndOfFrame();
+            }
         }
 
         // Finalization of placement ensures Character ends up where they should be even in edge cases.
         LeaveTile();
-        transform.position = NextTile;
+        FinalizePosition(NextTile);
+    }
+
+    private void FinalizePosition(Vector3 pos)
+    {
+        transform.position = pos;
         UpdateCreatureTile();
         animator.ResetAnimation();
         RequestCardinalMap();
+        isMoving = false;
         path = null;
+    
     }
+
     private void TweenAlongPath(Vector3 path)
     {
         // DOMove(end,duration, snapping)

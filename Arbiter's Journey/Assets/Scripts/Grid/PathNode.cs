@@ -55,25 +55,25 @@ public class PathNode
 
         // Left
         SmartTile botleft = tilemap.GetTileSansOffset(location.x - 1, location.y - 1);
-        if (botleft != null) returnNodes.Add(botleft.GetPathNode());
+        if (botleft != null && botleft.IsValidNeighbor()) returnNodes.Add(botleft.GetPathNode());
         SmartTile midleft = tilemap.GetTileSansOffset(location.x - 1, location.y);
-        if (midleft != null) returnNodes.Add(midleft.GetPathNode());
+        if (midleft != null && midleft.IsValidNeighbor()) returnNodes.Add(midleft.GetPathNode());
         SmartTile topleft = tilemap.GetTileSansOffset(location.x - 1, location.y + 1);
-        if (topleft != null) returnNodes.Add(topleft.GetPathNode());
+        if (topleft != null && topleft.IsValidNeighbor()) returnNodes.Add(topleft.GetPathNode());
 
         // Top and Bottom
         SmartTile top = tilemap.GetTileSansOffset(location.x, location.y - 1);
-        if (top != null) returnNodes.Add(top.GetPathNode());
+        if (top != null &&  top.IsValidNeighbor()) returnNodes.Add(top.GetPathNode());
         SmartTile bot = tilemap.GetTileSansOffset(location.x, location.y + 1);
-        if (bot != null) returnNodes.Add(bot.GetPathNode());
+        if (bot != null && bot.IsValidNeighbor()) returnNodes.Add(bot.GetPathNode());
 
         // Right
         SmartTile botright = tilemap.GetTileSansOffset(location.x + 1, location.y - 1);
-        if (botright != null) returnNodes.Add(botright.GetPathNode());
+        if (botright != null && botright.IsValidNeighbor()) returnNodes.Add(botright.GetPathNode());
         SmartTile midright = tilemap.GetTileSansOffset(location.x + 1, location.y);
-        if (midright != null) returnNodes.Add(midright.GetPathNode());
+        if (midright != null && midright.IsValidNeighbor()) returnNodes.Add(midright.GetPathNode());
         SmartTile topright = tilemap.GetTileSansOffset(location.x + 1, location.y + 1);
-        if (topright != null) returnNodes.Add(topright.GetPathNode());
+        if (topright != null && topright.IsValidNeighbor()) returnNodes.Add(topright.GetPathNode());
 
         return returnNodes;
     }

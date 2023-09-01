@@ -12,6 +12,7 @@ public class SmartTile
     public string name;
     private PathNode pathNode = null;
     private List<GameObject> inventory;
+    private bool endNode = false;
 
     public override string ToString()
     {
@@ -80,5 +81,37 @@ public class SmartTile
     internal TileBase GetTile()
     {
         return tile;
+    }
+
+    internal void PopInventory()
+    {
+        if (this.inventory == null)
+        {
+            ClearInventory();
+        }
+        else if (this.inventory.Count > 0)
+        {
+            this.inventory.RemoveAt(inventory.Count - 1);
+        }
+    }
+
+    internal bool HasObject()
+    {
+        return inventory != null && inventory.Count > 0;
+    }
+
+    internal bool IsValidNeighbor()
+    {
+        return !HasObject() || endNode;
+    }
+
+    internal void SetEndNode()
+    {
+        this.endNode = true;
+    }
+
+    internal void ClearEndNode()
+    {
+        this.endNode = false;
     }
 }

@@ -31,6 +31,7 @@ public class Pathfinding : ScriptableObject
 
         PathNode startNode = new PathNode(startTile, tilemap);
         PathNode endNode = new PathNode(endTile, tilemap);
+        endTile.SetEndNode();
 
         openList = new List<PathNode> { startNode };
         finalList = new List<PathNode>();
@@ -44,21 +45,21 @@ public class Pathfinding : ScriptableObject
             PathNode current = GetLowestFCostNode(openList);
             if (current.GetLocation() == endNode.GetLocation()) 
             {
+                // This could use some cleanup
                 Interactable obj = endTile.GetObjectOnIt();
                 if (obj != null) 
                 {
+                    // Intractables that are not collectible return a shorter path.
                     if (!obj.IsCollectible())
                     {
-                        List<PathNode> retPath = CalcPath(current.GetPreviousNode());
+                        List<PathNode> shortPath = CalcPath(current.GetPreviousNode());
                         current.SetPreviousNode(null);
-                        obj.Interact();
-                        return retPath;
+                        endTile.ClearEndNode();
+                        return shortPath;
                     }
-
-                    obj.Interact();
                 }
                 var path = CalcPath(current);
-                DebugDraw.DebugPath(path);
+                endTile.ClearEndNode();
                 return path;
             }
 
@@ -69,7 +70,6 @@ public class Pathfinding : ScriptableObject
             {
                 if (finalList.Contains(neighbor)) continue;
 
-                // 100
                 int tempG = CalculateHCost(current, neighbor);
                 if (tempG <= neighbor.gCost)
                 {
@@ -88,6 +88,7 @@ public class Pathfinding : ScriptableObject
 
         // No path found!
         Debug.Log("Pathfinding: No path was found to " + endTile.ToString());
+        endTile.ClearEndNode();
         return null;
     }
 

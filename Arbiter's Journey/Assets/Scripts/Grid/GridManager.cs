@@ -75,15 +75,6 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    private List<PathNode> GetPath(Creature c, Pathfinding p, Vector3Int target)
-    {
-        List<PathNode> path = p.FindPath(c.GetTile(), terrainMap.GetTile(target));
-        if (path != null)
-            p.ClearPathNodes(path);
-
-        return path;
-    }
-
     internal SmartTileMap GetCollisionTileMap()
     {
         return obstacleMap;
@@ -99,5 +90,16 @@ public class GridManager : MonoBehaviour
         if (this.creatureList.Contains(creature)) return;
         
         this.creatureList.Add(creature);
+    }
+
+    // Use this to find a path between two tiles.  The player's Pathfinding can be passed in if needed;
+    // the reason there's a pathfinding var is to be able to use different logic if needed (say, for a flyer).
+    private List<PathNode> GetPath(SmartTile tile, Pathfinding p, Vector3Int target)
+    {
+        List<PathNode> path = p.FindPath(tile, terrainMap.GetTile(target));
+        if (path != null)
+            p.ClearPathNodes(path);
+
+        return path;
     }
 }
